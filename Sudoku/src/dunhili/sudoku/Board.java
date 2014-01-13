@@ -39,10 +39,21 @@ public class Board
     {
         if (n < 0 || n > 9)
         {
-            throw new UnsupportedOperationException("Number must be between 1 and 9.");
+            throw new UnsupportedOperationException("Number must be between 0 and 9.");
         }
         else if (checkBounds(x, y))
         {
+            // if we are setting a cell to blank, decrement the count of the
+            // number in that cell
+            if (n == 0)
+            {
+                numberCount[cells[x][y] - 1]--;
+            }
+            else if (cells[x][y] != n)
+            {
+                numberCount[n - 1]++;
+            }
+
             cells[x][y] = n;
         }
     }
@@ -62,7 +73,7 @@ public class Board
     }
 
     /**
-     * Returns the character count at the given index. If the index is invalid,
+     * Returns the character count for the given number. If the index is invalid,
      * returns -1.
      *
      * @param index index of the character count to return
@@ -70,7 +81,7 @@ public class Board
      */
     public int getCellCount(int index)
     {
-        return (index >= 0 && index < 9) ? numberCount[index] : -1;
+        return (index > 0 && index <= 9) ? numberCount[index - 1] : -1;
     }
 
     /**
@@ -91,7 +102,7 @@ public class Board
             }
         }
 
-        return checkRows() && checkColumns();
+        return checkRows() && checkColumns() && checkSubGrids();
     }
 
     /**
@@ -106,10 +117,10 @@ public class Board
     {
         // checks the current row to make sure there isn't more than 1 of a
         // number
-        int[] rowCount = new int[9];
+        int[] numCount = new int[9];
         for (int i = 0; i < 9; i++)
         {
-            if (getCell(x, i) != 0 && ++rowCount[getCell(x, i) - 1] > 1)
+            if (getCell(x, i) != 0 && ++numCount[getCell(x, i) - 1] > 1)
             {
                 return true;
             }
@@ -117,16 +128,60 @@ public class Board
 
         // checks the current column to make sure there isn't more than 1 of a
         // number
-        int[] colCount = new int[9];
+        numCount = new int[9];
         for (int j = 0; j < 9; j++)
         {
-            if (getCell(j, y) != 0 && ++colCount[getCell(j, y) - 1] > 1)
+            if (getCell(j, y) != 0 && ++numCount[getCell(j, y) - 1] > 1)
             {
                 return true;
             }
         }
 
+        // checks the current grid to make sure there isn't more than 1 of a
+        // number
+        numCount = new int[9];
+        int row = x / 3;
+        int col = y / 3;
+        for (int i = row; i < (row + 1) * 3; i++)
+        {
+            for (int j = col; j < (col + 1) * 3; j++)
+            {
+                if (getCell(i, j) != 0 && ++numCount[getCell(i, j) - 1] > 1)
+                {
+                    return true;
+                }
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * Returns a String representation of the Sudoku board.
+     *
+     * @return String representation of the board
+     */
+    public String toString()
+    {
+        StringBuilder buffer = new StringBuilder();
+        for (int j = 0; j < 9; j++)
+        {
+            if (j % 3 == 0)
+            {
+                buffer.append("-------------\n");
+            }
+            for (int i = 0; i < 9; i++)
+            {
+                if (i % 3 == 0)
+                {
+                    buffer.append("|");
+                }
+                buffer.append((cells[i][j] == 0) ? " " : cells[i][j]);
+            }
+            buffer.append("|\n");
+        }
+        buffer.append("-------------\n");
+        return buffer.toString();
     }
 
     // ~ Private methods ------------------------------------------------------
@@ -178,7 +233,7 @@ public class Board
             {
                 // increments the cell corresponding the number, if there is more
                 // than one number in that cell, return false
-                if (getCell(i, j) != 0 && ++currentRow[getCell(i, j) - 1] > 1)
+                if (getCell(i, j) == 0 || ++currentRow[getCell(i, j) - 1] > 1)
                 {
                     return false;
                 }
@@ -214,7 +269,7 @@ public class Board
             {
                 // increments the cell corresponding the number, if there is more
                 // than one number in that cell, return false
-                if (getCell(i, j) != 0 && ++currentColumn[getCell(i, j) - 1] > 1)
+                if (getCell(i, j) == 0 || ++currentColumn[getCell(i, j) - 1] > 1)
                 {
                     return false;
                 }
@@ -227,6 +282,38 @@ public class Board
                 if (currentColumn[i] != 1)
                 {
                     return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks the 9 3x3 grids to make sure there are no duplicates in the grid.
+     * Returns true if all the grids have 1 of all the numbers in it, false
+     * otherwise.
+     *
+     * @return true if all the subgrids have 1 item, false otherwise
+     */
+    private boolean checkSubGrids()
+    {
+        // Iterates over the 9 subgrids
+        for (int subGrid = 0; subGrid < 9; subGrid++)
+        {
+            // Checking the subgrids a row at a time
+            int row = subGrid / 3;
+            int col = subGrid % 3;
+            int[] currentGrid = new int[9];
+
+            for (int i = row * 3; i < (row + 1) * 3; i++)
+            {
+                for (int j = col * 3; j < (col + 1) * 3; j++)
+                {
+                    if (getCell(i, j) == 0 || ++currentGrid[getCell(i, j) - 1] > 1)
+                    {
+                        return false;
+                    }
                 }
             }
         }
